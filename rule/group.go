@@ -252,6 +252,7 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 				fwdr.SetMaxFailures(0)
 				log.F("[check] %s: %s(%d), %s, stop checking", p.name, fwdr.Addr(), fwdr.Priority(), err)
 				fwdr.Enable()
+log.F("[enabled] %s", fwdr.url)
 				break
 			}
 
@@ -262,6 +263,7 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 
 			log.F("[check] %s: %s(%d), FAILED. error: %s", p.name, fwdr.Addr(), fwdr.Priority(), err)
 			fwdr.Disable()
+log.F("[disabled] %s ==> %s", fwdr.url, err)
 			continue
 		}
 
@@ -270,6 +272,7 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 		log.F("[check] %s: %s(%d), SUCCESS. Elapsed: %dms, Latency: %dms.",
 			p.name, fwdr.Addr(), fwdr.Priority(), elapsed.Milliseconds(), time.Duration(fwdr.Latency()).Milliseconds())
 		fwdr.Enable()
+log.F("[enabled] %s", fwdr.url)
 	}
 }
 
