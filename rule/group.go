@@ -230,6 +230,32 @@ func (p *FwdrGroup) Check() {
 	}
 }
 
+type doCheckResult struct {
+	Elapsed time.Duration
+	Error   error
+}
+
+func checkerCheckForwarder(fwdr *Forwarder, checker Checker) (time.Duration, error) {
+	result := make(chan doCheckResult, 1)
+	go func() {
+		result <- doCheckerCheckForwarder(fwdr, checker)
+	}()
+	select {
+	case <-time.After(30 * time.Second):
+		return 0, errors.New("timed out when waiting for the forwarder")
+	case result := <-result:
+		return result.Elapsed, result.Error
+	}
+}
+
+func doCheckerCheckForwarder(fwdr *Forwarder, checker Checker) doCheckResult {
+	elapsed, err := checker.Check(fwdr)
+	return doCheckResult{
+		Elapsed: elapsed,
+		Error:   err,
+	}
+}
+
 func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 	wait := uint8(0)
 	intval := time.Duration(p.config.CheckInterval) * time.Second
@@ -246,13 +272,14 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 			continue
 		}
 
-		elapsed, err := checker.Check(fwdr)
+		// elapsed, err := checker.Check(fwdr)
+		elapsed, err := checkerCheckForwarder(fwdr, checker)
 		if err != nil {
 			if errors.Is(err, proxy.ErrNotSupported) {
 				fwdr.SetMaxFailures(0)
 				log.F("[check] %s: %s(%d), %s, stop checking", p.name, fwdr.Addr(), fwdr.Priority(), err)
 				fwdr.Enable()
-log.F("[enabled] %s", fwdr.url)
+				log.F("[enabled] %s", fwdr.url)
 				break
 			}
 
@@ -263,7 +290,7 @@ log.F("[enabled] %s", fwdr.url)
 
 			log.F("[check] %s: %s(%d), FAILED. error: %s", p.name, fwdr.Addr(), fwdr.Priority(), err)
 			fwdr.Disable()
-log.F("[disabled] %s ==> %s", fwdr.url, err)
+			log.F("[disabled] %s ==> %s", fwdr.url, err)
 			continue
 		}
 
@@ -272,7 +299,7 @@ log.F("[disabled] %s ==> %s", fwdr.url, err)
 		log.F("[check] %s: %s(%d), SUCCESS. Elapsed: %dms, Latency: %dms.",
 			p.name, fwdr.Addr(), fwdr.Priority(), elapsed.Milliseconds(), time.Duration(fwdr.Latency()).Milliseconds())
 		fwdr.Enable()
-log.F("[enabled] %s", fwdr.url)
+		log.F("[enabled] %s", fwdr.url)
 	}
 }
 
