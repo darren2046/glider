@@ -58,6 +58,7 @@ func NewVMess(s string, d proxy.Dialer) (*VMess, error) {
 	aead := alterID == 0
 	client, err := NewClient(uuid, security, int(alterID), aead)
 	if err != nil {
+		log.F("create vmess client err: %s ==> %s", err, s)
 		log.F("create vmess client err: %s", err)
 		return nil, err
 	}
