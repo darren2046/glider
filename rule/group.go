@@ -283,8 +283,8 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 				break
 			}
 
-			wait += 3
-			if wait > 64 {
+			wait += 30
+			if wait > 640 {
 				// wait = 16
 				return
 			}
