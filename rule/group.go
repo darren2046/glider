@@ -257,7 +257,7 @@ func doCheckerCheckForwarder(fwdr *Forwarder, checker Checker) doCheckResult {
 }
 
 func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
-	wait := uint8(0)
+	wait := 0
 	intval := time.Duration(p.config.CheckInterval) * time.Second
 
 	for {
@@ -283,9 +283,10 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 				break
 			}
 
-			wait++
-			if wait > 16 {
-				wait = 16
+			wait += 10
+			if wait > 300 {
+				// wait = 16
+				return
 			}
 
 			log.F("[check] %s: %s(%d), FAILED. error: %s", p.name, fwdr.Addr(), fwdr.Priority(), err)
