@@ -310,6 +310,18 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 	intval := time.Duration(p.config.CheckInterval) * time.Second
 
 	for {
+		for {
+			p.muu.Lock()
+			if time.Now().Unix()-p.lastchecktime > 1 {
+				p.lastchecktime = time.Now().Unix()
+				p.muu.Unlock()
+				break
+			}
+
+			p.muu.Unlock()
+			sleep(randFloat(0.1, 0.9))
+		}
+
 		time.Sleep(intval * time.Duration(wait))
 
 		// check all forwarders at least one time
@@ -319,18 +331,6 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 
 		if fwdr.Enabled() && p.config.CheckDisabledOnly {
 			continue
-		}
-
-		for {
-			p.muu.Lock()
-			if p.lastchecktime-time.Now().Unix() > 1 {
-				p.lastchecktime = time.Now().Unix()
-				p.muu.Unlock()
-				break
-			}
-
-			p.muu.Unlock()
-			sleep(randFloat(0.1, 0.9))
 		}
 
 		// elapsed, err := checker.Check(fwdr)
