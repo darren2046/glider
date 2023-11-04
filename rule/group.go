@@ -71,7 +71,7 @@ func NewFwdrGroup(rulePath string, s []string, c *Strategy) *FwdrGroup {
 
 // newFwdrGroup returns a new FwdrGroup.
 func newFwdrGroup(name string, fwdrs []*Forwarder, c *Strategy) *FwdrGroup {
-	p := &FwdrGroup{name: name, fwdrs: fwdrs, config: c, rl: ratelimit.New(2)}
+	p := &FwdrGroup{name: name, fwdrs: fwdrs, config: c, rl: ratelimit.New(1)}
 	sort.Sort(p.fwdrs)
 
 	p.init()
