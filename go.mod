@@ -10,12 +10,15 @@ require (
 	github.com/insomniacslk/dhcp v0.0.0-20230307103557-e252950ab961
 	github.com/nadoo/conflag v0.3.1
 	github.com/nadoo/ipset v0.5.0
+	github.com/spf13/cast v1.5.1
 	github.com/xtaci/kcp-go/v5 v5.6.2
+	go.uber.org/ratelimit v0.3.0
 	golang.org/x/crypto v0.7.0
 	golang.org/x/sys v0.6.0
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
