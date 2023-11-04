@@ -17,7 +17,6 @@ import (
 	"github.com/nadoo/glider/pkg/log"
 	"github.com/nadoo/glider/proxy"
 	"github.com/spf13/cast"
-	"go.uber.org/ratelimit"
 )
 
 // forwarder slice orderd by priority.
@@ -38,7 +37,8 @@ type FwdrGroup struct {
 	priority uint32
 	next     func(addr string) *Forwarder
 
-	rl ratelimit.Limiter
+	lastchecktime int64
+	muu           sync.Mutex
 }
 
 // NewFwdrGroup returns a new forward group.
@@ -71,7 +71,7 @@ func NewFwdrGroup(rulePath string, s []string, c *Strategy) *FwdrGroup {
 
 // newFwdrGroup returns a new FwdrGroup.
 func newFwdrGroup(name string, fwdrs []*Forwarder, c *Strategy) *FwdrGroup {
-	p := &FwdrGroup{name: name, fwdrs: fwdrs, config: c, rl: ratelimit.New(1)}
+	p := &FwdrGroup{name: name, fwdrs: fwdrs, config: c, lastchecktime: 0}
 	sort.Sort(p.fwdrs)
 
 	p.init()
@@ -321,7 +321,17 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 			continue
 		}
 
-		p.rl.Take()
+		for {
+			p.muu.Lock()
+			if p.lastchecktime-time.Now().Unix() > 1 {
+				p.lastchecktime = time.Now().Unix()
+				p.muu.Unlock()
+				break
+			}
+
+			p.muu.Unlock()
+			sleep(randFloat(0.1, 0.9))
+		}
 
 		// elapsed, err := checker.Check(fwdr)
 		elapsed, err := checkerCheckForwarder(fwdr, checker)
