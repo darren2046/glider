@@ -3,9 +3,11 @@ package rule
 import (
 	"errors"
 	"hash/fnv"
+	"math/rand"
 	"net"
 	"net/url"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/nadoo/glider/pkg/log"
 	"github.com/nadoo/glider/proxy"
+	"github.com/spf13/cast"
 )
 
 // forwarder slice orderd by priority.
@@ -33,6 +36,9 @@ type FwdrGroup struct {
 	index    uint32
 	priority uint32
 	next     func(addr string) *Forwarder
+
+	currentchecking int
+	muu             sync.Mutex
 }
 
 // NewFwdrGroup returns a new forward group.
@@ -65,7 +71,7 @@ func NewFwdrGroup(rulePath string, s []string, c *Strategy) *FwdrGroup {
 
 // newFwdrGroup returns a new FwdrGroup.
 func newFwdrGroup(name string, fwdrs []*Forwarder, c *Strategy) *FwdrGroup {
-	p := &FwdrGroup{name: name, fwdrs: fwdrs, config: c}
+	p := &FwdrGroup{name: name, fwdrs: fwdrs, config: c, currentchecking: 0}
 	sort.Sort(p.fwdrs)
 
 	p.init()
@@ -256,6 +262,49 @@ func doCheckerCheckForwarder(fwdr *Forwarder, checker Checker) doCheckResult {
 	}
 }
 
+func Typeof(v interface{}) string {
+	return reflect.TypeOf(v).String()
+}
+
+func Int64(v interface{}) int64 {
+	return cast.ToInt64(v)
+}
+
+func getTimeDuration(seconds interface{}) time.Duration {
+	var timeDuration time.Duration
+	if Typeof(seconds) == "float64" {
+		tt := seconds.(float64) * 1000
+		if tt < 0 {
+			tt = 0
+		}
+		timeDuration = time.Duration(tt) * time.Millisecond
+	}
+	if Typeof(seconds) == "int" || Typeof(seconds) == "int8" || Typeof(seconds) == "int16" || Typeof(seconds) == "int32" || Typeof(seconds) == "int64" {
+		tt := Int64(seconds)
+		if tt < 0 {
+			tt = 0
+		}
+		timeDuration = time.Duration(tt) * time.Second
+	}
+	return timeDuration
+}
+
+func sleep(t interface{}) {
+	time.Sleep(getTimeDuration(t))
+}
+
+func randFloats(min, max float64, n int) []float64 {
+	res := make([]float64, n)
+	for i := range res {
+		res[i] = min + rand.Float64()*(max-min)
+	}
+	return res
+}
+
+func randFloat(min, max float64) float64 {
+	return min + rand.Float64()*(max-min)
+}
+
 func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 	wait := 0
 	intval := time.Duration(p.config.CheckInterval) * time.Second
@@ -272,8 +321,28 @@ func (p *FwdrGroup) check(fwdr *Forwarder, checker Checker) {
 			continue
 		}
 
+		for {
+			p.muu.Lock()
+			if p.currentchecking < 3 {
+				p.currentchecking += 1
+				p.muu.Unlock()
+				break
+			}
+
+			p.muu.Unlock()
+			sleep(randFloat(0.1, 0.9))
+		}
+
 		// elapsed, err := checker.Check(fwdr)
 		elapsed, err := checkerCheckForwarder(fwdr, checker)
+
+		p.muu.Lock()
+		p.currentchecking -= 1
+		if p.currentchecking < 0 {
+			p.currentchecking = 0
+		}
+		p.muu.Unlock()
+
 		if err != nil {
 			if errors.Is(err, proxy.ErrNotSupported) {
 				fwdr.SetMaxFailures(0)
