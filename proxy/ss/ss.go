@@ -1,6 +1,7 @@
 package ss
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/nadoo/glider/pkg/log"
@@ -36,7 +37,7 @@ func NewSS(s string, d proxy.Dialer, p proxy.Proxy) (*SS, error) {
 
 	ciph, err := cipher.PickCipher(method, nil, pass)
 	if err != nil {
-		log.Fatalf("[ss] PickCipher for '%s', error: %s", method, err)
+		return nil, fmt.Errorf("[ss] PickCipher for '%s', error: %s", method, err)
 	}
 
 	ss := &SS{

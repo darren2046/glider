@@ -52,13 +52,15 @@ func ForwarderFromURL(s, intface string, dialTimeout, relayTimeout time.Duration
 	var addrs []string
 	for _, url := range strings.Split(ss[0], ",") {
 		d, err = proxy.DialerFromURL(url, d)
-		if err != nil {
-			return nil, err
-		}
-		cnt := len(addrs)
-		if cnt == 0 ||
-			(cnt > 0 && d.Addr() != addrs[cnt-1]) {
-			addrs = append(addrs, d.Addr())
+		// if err != nil {
+		// 	return nil, err
+		// }
+		if err == nil {
+			cnt := len(addrs)
+			if cnt == 0 ||
+				(cnt > 0 && d.Addr() != addrs[cnt-1]) {
+				addrs = append(addrs, d.Addr())
+			}
 		}
 	}
 

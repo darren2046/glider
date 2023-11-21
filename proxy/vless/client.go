@@ -3,6 +3,7 @@ package vless
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 
@@ -103,6 +104,7 @@ func (c *ClientConn) Read(b []byte) (n int, err error) {
 		}
 
 		if buf[0] != Version {
+			fmt.Println(buf[0])
 			return n, errors.New("version not supported")
 		}
 

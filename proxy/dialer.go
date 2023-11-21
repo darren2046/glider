@@ -65,7 +65,7 @@ func DialerFromURL(s string, dialer Dialer) (Dialer, error) {
 		return c(s, dialer)
 	}
 
-	return nil, errors.New("unknown scheme '" + scheme + "'")
+	return nil, errors.New("Error on: " + s)
 }
 
 // DialerSchemes returns the registered dialer schemes.
